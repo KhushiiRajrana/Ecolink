@@ -1,109 +1,207 @@
 "use client"
 
+import { useState, useEffect } from "react"
+import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { CheckCircle, Heart, Eye, MapPin } from "lucide-react"
+import { ArrowLeft, Heart, Clock, CheckCircle, XCircle } from "lucide-react"
+import { donationsAPI } from "../../lib/api"
+import { useToast } from "../../components/ui/use-toast"
 
-export default function DonationStatus() {
-  return (
-    <div className="space-y-6">
-      <Card className="border-green-200 bg-green-50">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-green-800">
-            <CheckCircle className="h-5 w-5" />
-            Donation Approved!
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-green-700">Your donation has been processed and is now helping someone in need.</p>
-        </CardContent>
-      </Card>
+export default function DonationStatus({ onBack }) {
+  const [donations, setDonations] = useState([])
+  const [loading, setLoading] = useState(true)
+  const { toast } = useToast()
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Donation Journey</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
-              <CheckCircle className="h-4 w-4 text-green-600" />
-            </div>
-            <div className="flex-1">
-              <p className="font-medium">Donation Received</p>
-              <p className="text-sm text-gray-600">Item verified and processed</p>
-            </div>
-            <Badge variant="secondary" className="bg-green-100 text-green-800">
-              Complete
-            </Badge>
-          </div>
+  useEffect(() => {
+    fetchDonations()
+  }, [])
 
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
-              <Heart className="h-4 w-4 text-green-600" />
-            </div>
-            <div className="flex-1">
-              <p className="font-medium">Donated Rewear Tag Applied</p>
-              <p className="text-sm text-gray-600">Available for community access</p>
-            </div>
-            <Badge className="bg-green-600">Donated Rewear</Badge>
-          </div>
+  const fetchDonations = async () => {
+    try {
+      const response = await donationsAPI.getMyDonations()
+      setDonations(response.data.donations)
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to fetch donations",
+        variant: "destructive",
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
 
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-              <MapPin className="h-4 w-4 text-blue-600" />
-            </div>
-            <div className="flex-1">
-              <p className="font-medium">Sent to Local NGO</p>
-              <p className="text-sm text-gray-600">Hope Foundation, Sector 15</p>
-            </div>
-            <Badge variant="secondary" className="bg-blue-100 text-blue-800">
-              Delivered
-            </Badge>
-          </div>
-        </CardContent>
-      </Card>
+  const getStatusIcon = (status) => {
+    switch (status) {
+      case "pending":
+        return <Clock className="h-4 w-4" />
+      case "quality_check":
+        return <Heart className="h-4 w-4" />
+      case "approved":
+        return <CheckCircle className="h-4 w-4" />
+      case "rejected":
+        return <XCircle className="h-4 w-4" />
+      case "tagged":
+        return <Heart className="h-4 w-4" />
+      case "delivered":
+        return <CheckCircle className="h-4 w-4" />
+      default:
+        return <Clock className="h-4 w-4" />
+    }
+  }
 
-      <Card>
-        <CardContent className="p-4">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="font-semibold">Your Item in Donated Store</h3>
-            <Button variant="outline" size="sm" className="flex items-center gap-2 bg-transparent">
-              <Eye className="h-4 w-4" />
-              View Item
+  const getStatusBadge = (status) => {
+    const colors = {
+      pending: "bg-yellow-100 text-yellow-800",
+      quality_check: "bg-blue-100 text-blue-800",
+      approved: "bg-green-100 text-green-800",
+      rejected: "bg-red-100 text-red-800",
+      tagged: "bg-purple-100 text-purple-800",
+      delivered: "bg-green-100 text-green-800",
+    }
+
+    return (
+      <Badge className={colors[status]}>
+        {getStatusIcon(status)}
+        <span className="ml-1 capitalize">{status.replace("_", " ")}</span>
+      </Badge>
+    )
+  }
+
+  const getStatusMessage = (status) => {
+    switch (status) {
+      case "pending":
+        return "Your donation is being reviewed by our team"
+      case "quality_check":
+        return "Your item is undergoing quality inspection"
+      case "approved":
+        return "Your donation has been approved and is ready for NGO assignment"
+      case "rejected":
+        return "Your donation was rejected. Please check admin notes for details"
+      case "tagged":
+        return "Your donation has been tagged for an NGO"
+      case "delivered":
+        return "Your donation has been successfully delivered to the NGO"
+      default:
+        return "Status unknown"
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-4">
+        <div className="max-w-4xl mx-auto">
+          <div className="flex items-center gap-4 mb-6">
+            <Button variant="ghost" size="icon" onClick={onBack}>
+              <ArrowLeft className="h-5 w-5" />
             </Button>
+            <h1 className="text-2xl font-bold text-gray-800">Donation Status</h1>
           </div>
-          <div className="bg-gray-100 rounded-lg p-3">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-gray-300 rounded-lg"></div>
-              <div className="flex-1">
-                <p className="font-medium">Blue Cotton Shirt</p>
-                <p className="text-sm text-gray-600">Size: M • Category: Shirts</p>
-                <Badge className="bg-green-600 mt-1">Free</Badge>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+          <div className="text-center py-8">Loading...</div>
+        </div>
+      </div>
+    )
+  }
 
-      <Card className="bg-blue-50 border-blue-200">
-        <CardContent className="p-4">
-          <div className="flex items-center gap-2 mb-2">
-            <Heart className="h-5 w-5 text-blue-600" />
-            <h3 className="font-semibold text-blue-800">Impact Created</h3>
+  return (
+    <div className="min-h-screen bg-gray-50 p-4">
+      <div className="max-w-4xl mx-auto">
+        <div className="flex items-center gap-4 mb-6">
+          <Button variant="ghost" size="icon" onClick={onBack}>
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <h1 className="text-2xl font-bold text-gray-800">Donation Status</h1>
+        </div>
+
+        {donations.length === 0 ? (
+          <Card>
+            <CardContent className="text-center py-8">
+              <Heart className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+              <h3 className="text-lg font-medium text-gray-600 mb-2">No Donations Yet</h3>
+              <p className="text-gray-500">You haven't submitted any donation requests yet.</p>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="space-y-4">
+            {donations.map((donation) => (
+              <Card key={donation.id}>
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-lg">{donation.item_name}</CardTitle>
+                    {getStatusBadge(donation.status)}
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-3">
+                      <div>
+                        <p className="text-sm font-medium text-gray-600">Category</p>
+                        <p className="text-gray-800">{donation.category}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-600">Condition Reported</p>
+                        <p className="text-gray-800 capitalize">{donation.condition_reported}</p>
+                      </div>
+                      {donation.condition_actual && (
+                        <div>
+                          <p className="text-sm font-medium text-gray-600">Actual Condition</p>
+                          <p className="text-gray-800 capitalize">{donation.condition_actual}</p>
+                        </div>
+                      )}
+                      {donation.size && (
+                        <div>
+                          <p className="text-sm font-medium text-gray-600">Size</p>
+                          <p className="text-gray-800">{donation.size}</p>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="space-y-3">
+                      <div>
+                        <p className="text-sm font-medium text-gray-600">Submitted Date</p>
+                        <p className="text-gray-800">{new Date(donation.created_at).toLocaleDateString()}</p>
+                      </div>
+                      {donation.description && (
+                        <div>
+                          <p className="text-sm font-medium text-gray-600">Description</p>
+                          <p className="text-gray-800">{donation.description}</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {donation.photos && donation.photos.length > 0 && (
+                    <div className="mt-4">
+                      <p className="text-sm font-medium text-gray-600 mb-2">Photos</p>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                        {donation.photos.map((photo, index) => (
+                          <img
+                            key={index}
+                            src={`${process.env.NEXT_PUBLIC_API_URL?.replace("/api", "") || "http://localhost:5000"}${photo}`}
+                            alt={`${donation.item_name} ${index + 1}`}
+                            className="w-full h-20 object-cover rounded-lg"
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+                    <p className="text-sm text-gray-600">{getStatusMessage(donation.status)}</p>
+                    {donation.admin_notes && (
+                      <div className="mt-2">
+                        <p className="text-sm font-medium text-gray-600">Admin Notes:</p>
+                        <p className="text-sm text-gray-800">{donation.admin_notes}</p>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
           </div>
-          <div className="grid grid-cols-2 gap-4 text-center">
-            <div>
-              <div className="text-lg font-bold text-blue-600">2.3 kg</div>
-              <div className="text-xs text-blue-700">CO₂ Saved</div>
-            </div>
-            <div>
-              <div className="text-lg font-bold text-blue-600">1</div>
-              <div className="text-xs text-blue-700">Person Helped</div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+        )}
+      </div>
     </div>
   )
 }
